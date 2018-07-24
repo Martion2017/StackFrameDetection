@@ -1,5 +1,6 @@
+package com.martin.record;
 
-import count.TimeCount;
+import com.martin.count.TimeCount;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
@@ -13,22 +14,29 @@ public class DetectionMethodAdapter extends AdviceAdapter {
 
     private int startTimeIndex;
 
+    private MethodEntity method;
+
     public DetectionMethodAdapter(int access,
                                   String name,
                                   String desc,
                                   MethodVisitor mv,
                                   String innerClassName) {
         super(ASM5, mv, access, name, desc);
-        this.methodTagId = name;
+        this.method = new MethodEntity(innerClassName,name);
+        this.methodTagId = method.getFullName();
     }
-
+    private MethodTag getMethodTag(String innerClassName, String methodName) {
+        int idx = innerClassName.replace('.', '/').lastIndexOf('/');
+        String simpleClassName = innerClassName.substring(idx + 1, innerClassName.length());
+        return MethodTag.getInstance(simpleClassName, methodName);
+    }
     @Override
     protected void onMethodEnter() {
-
-        mv.visitMethodInsn(INVOKESTATIC, "java/lang/System", "nanoTime", "()J", false);
-        startTimeIndex = newLocal(Type.LONG_TYPE);
-        mv.visitVarInsn(LSTORE, startTimeIndex);
-
+        if(checkParam(methodTagId)) {
+            mv.visitMethodInsn(INVOKESTATIC, "java/lang/System", "nanoTime", "()J", false);
+            startTimeIndex = newLocal(Type.LONG_TYPE);
+            mv.visitVarInsn(LSTORE, startTimeIndex);
+        }
     }
 
     /**
@@ -63,11 +71,20 @@ public class DetectionMethodAdapter extends AdviceAdapter {
      */
     @Override
     protected void onMethodExit(int opcode) {
-        if ((IRETURN <= opcode && opcode <= RETURN) || opcode == ATHROW) {
-            mv.visitVarInsn(LLOAD, startTimeIndex);
-            mv.visitLdcInsn(methodTagId);
-            mv.visitMethodInsn(INVOKESTATIC, TIMECOUNT_PATH, "methodTakesTime", "(JLjava/lang/String;)V", false);
+        if(checkParam(methodTagId)) {
+            if ((IRETURN <= opcode && opcode <= RETURN) || opcode == ATHROW) {
+                mv.visitVarInsn(LLOAD, startTimeIndex);
+                mv.visitLdcInsn(methodTagId);
+                mv.visitMethodInsn(INVOKESTATIC, TIMECOUNT_PATH, "methodTakesTime", "(JLjava/lang/String;)V", false);
+            }
         }
+    }
+
+    protected boolean checkParam(String parma) {
+        if(parma!=null&&!"".equals(parma)){
+            return true;
+        }
+        return false;
     }
 
 }

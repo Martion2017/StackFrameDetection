@@ -1,3 +1,4 @@
+package com.martin.record;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,8 +21,8 @@ import org.objectweb.asm.Opcodes;
  * Methods：该项对类或接口中声明的方法进行了细致的描述。例如方法的名称、参数和返回值类型等。需要注意的是，methods 列表里仅存放了本类或本接口中的方法，并不包括从超类和父接口继承而来的方法。使用 ASM 进行 AOP 编程，通常是通过调整 Method 中的指令来实现的。
  * Class attributes：该项存放了在该文件中类或接口所定义的属性的基本信息。
  */
-public class DetectionClassAdapter extends ClassVisitor implements Opcodes{
-	
+public class DetectionClassAdapter extends ClassVisitor implements Opcodes {
+
     private String innerClassName;
 
     private boolean isInterface;
@@ -35,7 +36,6 @@ public class DetectionClassAdapter extends ClassVisitor implements Opcodes{
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        System.out.println("ClassAdapter.visit(" + version + ", " + access + ", " + name + ", " + signature + ", " + superName + ", " + Arrays.toString(interfaces) + ")");
 
         super.visit(version, access, name, signature, superName, interfaces);
         this.isInterface = (access & ACC_INTERFACE) != 0;
@@ -57,7 +57,6 @@ public class DetectionClassAdapter extends ClassVisitor implements Opcodes{
                                      String desc,
                                      String signature,
                                      String[] exceptions) {
-    		System.out.println("ClassAdapter.visitMethod(" + access + ", " + name + ", " + desc + ", " + signature + ", " + Arrays.toString(exceptions) + ")");
         if (isInterface || !isNeedVisit(access, name)) {
             return super.visitMethod(access, name, desc, signature, exceptions);
         }
@@ -71,8 +70,9 @@ public class DetectionClassAdapter extends ClassVisitor implements Opcodes{
     }
 
     private boolean isNeedVisit(int access, String name) {
+
         //不对私有方法进行注入
-        if ((access & ACC_PRIVATE) != 0 ) {
+        if ((access & ACC_PRIVATE) != 0) {
             return false;
         }
 
@@ -85,12 +85,12 @@ public class DetectionClassAdapter extends ClassVisitor implements Opcodes{
             return false;
         }
 
-        if (fieldNameList.contains(name) ) {
+        if (fieldNameList.contains(name)) {
             return false;
         }
 
         return true;
     }
 
-	
+
 }
